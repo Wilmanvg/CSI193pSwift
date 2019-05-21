@@ -10,37 +10,85 @@ import UIKit
 
 class ViewController: UIViewController
 {
-    var flipCount = 0 {
-        didSet {
-            
-             flipCountLabel.text = "Flips: \(flipCount)"
-            
-        }
-    }
+    lazy var game = Concentration(numberOfPairsOfCards: (cardButtons.count + 1)/2, numOfThemes: (emojiChoices.count))
+//    var flipCount = 0 {
+//        didSet {
+//
+//             flipCountLabel.text = "Flips: \(flipCount)"
+//
+//        }
+//    }
     
     //To show a return value -> Int etc
     @IBOutlet weak var flipCountLabel: UILabel!
     @IBOutlet var cardButtons: [UIButton]!
-    var emojiChoices =  ["🎃","👻","🎃","👻"]
+    @IBOutlet weak var scoreLabel: UILabel!
+    
+    // var emojiChoices =  ["🎃","👻","🎃","👻"]
     
     @IBAction func touchCard(_ sender: UIButton) {
-        flipCount += 1
+        //flipCount += 1
         if let cardNumber = cardButtons.index(of: sender){
-            flipCard(withEmoji: emojiChoices[cardNumber], on: sender)
+            game.chooseCard(at: cardNumber)
+            updateViewFromModel()
         } else {
             print("Chosen card was not in cardButtons")
         }
     }
     
-    func flipCard(withEmoji emoji: String, on button: UIButton){
+    
+    @IBAction func touchNewGame(_ sender: UIButton) {
         
-        if button.currentTitle == emoji {
-            button.setTitle("", for: UIControl.State.normal)
-            button.backgroundColor = #colorLiteral(red: 1, green: 0.5763723254, blue: 0, alpha: 1)
-        } else {
-            button.setTitle(emoji, for: UIControl.State.normal)
-            button.backgroundColor = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+        for (_,emoj) in emoji{
+            emojiChoices[game.themeKey]!.append(emoj)
         }
+        
+        emoji.removeAll()
+        game = Concentration(numberOfPairsOfCards: (cardButtons.count + 1)/2, numOfThemes: (emojiChoices.count))
+        //game.chooseNewGame()
+        updateViewFromModel()
+        //flipCount = 0
+        
+    }
+    
+    func updateViewFromModel(){
+        for index in cardButtons.indices {
+            let button = cardButtons[index]
+            let card = game.cards[index]
+            if card.isFaceUp{
+                button.setTitle(emoji(for: card), for: UIControl.State.normal)
+                button.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+            } else {
+                button.setTitle("", for: UIControl.State.normal)
+                button.backgroundColor = card.isMatched ? #colorLiteral(red: 1, green: 0.5763723254, blue: 0, alpha: 0) : #colorLiteral(red: 1, green: 0.5763723254, blue: 0, alpha: 1)
+            }
+        }
+        
+        flipCountLabel.text = "Flips: \(game.flipCount)"
+        scoreLabel.text = "Score: \(game.score)"
+    }
+    
+   // var emojiChoices = ["🦇","😱","🙀","😈","🎃","👻","🍭","🍬","🍎"]
+    var emojiChoices = [0: ["🦇","😱","🙀","😈","🎃","👻","🍭","🍬","🍎"],
+                        1: ["⚾️","🎱","⚽️","🏀","🎾","🏈","🏐","🎳","🏑"],
+                        2: ["🐊","🐆","🦗","🦓","🦖","🦕","🦒","🐄","🕊"],
+                        3: ["👚","👘","👗","👖","👕","👔","🧥","🎽","👙"]
+    ]
+
+   // var emojiLib = [Int: [String]]()
+    var emoji = [Int:String]()
+    
+    func emoji(for card: Card) -> String {
+        
+        //print("When grabbing face value theme is \(game.themeKey)")
+        
+        if emoji[card.identifier] == nil , emojiChoices[game.themeKey]!.count > 0 {
+                let randomIndex = Int(arc4random_uniform(UInt32(emojiChoices[game.themeKey]!.count)))
+                emoji[card.identifier] = emojiChoices[game.themeKey]!.remove(at: randomIndex)
+            
+        }
+       
+        return emoji[card.identifier] ?? "?"
     }
     
 }
